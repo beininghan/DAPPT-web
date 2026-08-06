@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DAPPT: Domain-Aware Policies from Procedural Trajectories</title>
+<meta name="description" content="Sim-to-real dexterous manipulation via domain-aware procedural trajectory tracking — scooping, rod-rolling, scraping, mouse-wheel, dispenser, spray.">
+<style>
+  :root{
+    --ink:#16181c;
+    --ink-soft:#565b64;
+    --ink-faint:#8a8f98;
+    --bg:#ffffff;
+    --bg-alt:#f5f6f8;
+    --card:#ffffff;
+    --line:#e4e6ea;
+    --blue:#2a6fd6;
+    --blue-soft:#eaf1fd;
+    --orange:#e2661f;
+    --orange-soft:#fdf0e6;
+    --shadow: 0 1px 2px rgba(20,20,30,0.04), 0 8px 24px rgba(20,20,30,0.06);
+    --radius: 14px;
+    --maxw: 1120px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --ink:#eef0f3;
+      --ink-soft:#b7bcc6;
+      --ink-faint:#838993;
+      --bg:#0f1115;
+      --bg-alt:#15181e;
+      --card:#171a20;
+      --line:#262a32;
+      --blue:#6ea3f0;
+      --blue-soft:#182338;
+      --orange:#f0a066;
+      --orange-soft:#2a2016;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 28px rgba(0,0,0,0.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ink:#eef0f3; --ink-soft:#b7bcc6; --ink-faint:#838993;
+    --bg:#0f1115; --bg-alt:#15181e; --card:#171a20; --line:#262a32;
+    --blue:#6ea3f0; --blue-soft:#182338; --orange:#f0a066; --orange-soft:#2a2016;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 28px rgba(0,0,0,0.35);
+  }
+  :root[data-theme="light"]{
+    --ink:#16181c; --ink-soft:#565b64; --ink-faint:#8a8f98;
+    --bg:#ffffff; --bg-alt:#f5f6f8; --card:#ffffff; --line:#e4e6ea;
+    --blue:#2a6fd6; --blue-soft:#eaf1fd; --orange:#e2661f; --orange-soft:#fdf0e6;
+    --shadow: 0 1px 2px rgba(20,20,30,0.04), 0 8px 24px rgba(20,20,30,0.06);
+  }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family: "Söhne", "Helvetica Neue", Helvetica, Arial, ui-sans-serif, system-ui, sans-serif;
+    line-height:1.6; -webkit-font-smoothing:antialiased;
+  }
+  a{ color: var(--blue); text-decoration:none; }
+  a:hover{ text-decoration:underline; }
+  img{max-width:100%; display:block;}
+  .wrap{max-width:var(--maxw); margin:0 auto; padding:0 24px;}
+  section{padding:64px 0;}
+  section.tight{padding:36px 0;}
+  h1,h2,h3{font-weight:650; letter-spacing:-0.01em; margin:0 0 0.5em;}
+  h2{font-size:1.7rem; margin-bottom:0.9em;}
+  h2 .kicker{display:block; font-size:0.8rem; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:var(--ink-faint); margin-bottom:0.5em;}
+  h3{font-size:1.15rem;}
+  p{color:var(--ink-soft); margin:0 0 1em;}
+  .lede{font-size:1.08rem;}
+  .border-top{border-top:1px solid var(--line);}
+  .alt{background:var(--bg-alt);}
+
+  /* Nav */
+  nav{
+    position:sticky; top:0; z-index:50; backdrop-filter: blur(10px);
+    background: color-mix(in srgb, var(--bg) 82%, transparent);
+    border-bottom:1px solid var(--line);
+  }
+  nav .wrap{display:flex; align-items:center; justify-content:space-between; height:56px; gap:16px;}
+  nav .brand{font-weight:700; font-size:0.95rem; white-space:nowrap;}
+  nav .links{display:flex; gap:22px; flex-wrap:wrap; font-size:0.88rem;}
+  nav .links a{color:var(--ink-soft); font-weight:500;}
+  nav .links a:hover{color:var(--blue); text-decoration:none;}
+
+  /* Hero */
+  .hero{padding:56px 0 8px;}
+  .hero .title{font-size:2.35rem; line-height:1.15; max-width:900px;}
+  .hero .subtitle{font-size:1.15rem; color:var(--ink-soft); max-width:760px; margin-top:0.3em;}
+  .authors{margin-top:22px; font-size:1.02rem; color:var(--ink);}
+  .authors .aff{display:block; color:var(--ink-faint); font-size:0.92rem; margin-top:2px;}
+  .cta-row{display:flex; gap:12px; margin-top:26px; flex-wrap:wrap;}
+  .btn{
+    display:inline-flex; align-items:center; gap:8px; padding:10px 18px; border-radius:999px;
+    font-weight:600; font-size:0.92rem; border:1px solid var(--line); color:var(--ink);
+    background:var(--card); box-shadow:var(--shadow);
+  }
+  .btn:hover{text-decoration:none; border-color:var(--blue);}
+  .btn.primary{background:var(--ink); color:var(--bg); border-color:var(--ink);}
+  .btn.primary:hover{opacity:0.88;}
+
+  .hero-fig{margin-top:40px; border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow); border:1px solid var(--line);}
+  figcaption, .cap{font-size:0.88rem; color:var(--ink-faint); margin-top:10px; max-width:900px;}
+
+  /* Abstract card */
+  .abstract-card{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    padding:28px 30px; box-shadow:var(--shadow);
+  }
+
+  /* Pipeline / method */
+  .method-text{max-width:900px;}
+  .stage-list{list-style:none; margin:20px 0 0; padding:0; display:flex; gap:16px;}
+  @media (max-width: 760px){ .stage-list{flex-direction:column;} }
+  .stage-list li{
+    flex:1; display:flex; flex-direction:column; align-items:flex-start; gap:10px; padding:16px 18px;
+    background:var(--card); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow);
+  }
+  .stage-num{
+    flex:none; width:28px; height:28px; border-radius:50%; background:var(--blue-soft); color:var(--blue);
+    font-weight:700; font-size:0.85rem; display:flex; align-items:center; justify-content:center;
+  }
+  .stage-list b{color:var(--ink);}
+  .method-fig{margin-top:32px;}
+  .method-fig img{margin:0 auto;}
+
+  /* Task grid overview */
+  .task-pill-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:8px;}
+  @media (max-width:720px){ .task-pill-grid{grid-template-columns:repeat(2,1fr);} }
+  .task-pill{
+    border:1px solid var(--line); border-radius:12px; padding:14px 16px; background:var(--card); box-shadow: var(--shadow);
+  }
+  .task-pill .k{font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-faint); font-weight:700;}
+  .task-pill .v{font-size:0.95rem; margin-top:3px;}
+
+  /* Video task rows */
+  .task-row{
+    border:1px solid var(--line); border-radius:var(--radius); background:var(--card);
+    box-shadow:var(--shadow); padding:26px 26px 24px; margin-bottom:28px;
+  }
+  .task-row-head{display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:10px 20px; margin-bottom:6px;}
+  .task-row-head h3{margin:0; font-size:1.3rem;}
+  .task-idx{color:var(--ink-faint); font-weight:600; font-size:0.95rem; margin-right:8px;}
+  .metric-def{font-size:0.9rem; color:var(--ink-faint); margin-bottom:18px; max-width:820px;}
+  .metric-def b{color:var(--ink-soft);}
+
+  .real-stats{display:flex; gap:18px; flex-wrap:wrap; font-size:0.82rem; color:var(--ink-faint); margin-bottom:18px;}
+  .real-stats span b{color:var(--ink-soft);}
+
+  .video-columns{display:grid; grid-template-columns: 1fr 1.6fr; gap:22px;}
+  @media (max-width:860px){ .video-columns{grid-template-columns:1fr;} }
+
+  .col-label{display:flex; align-items:center; gap:8px; font-size:0.78rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:10px;}
+  .dot{width:8px; height:8px; border-radius:50%; flex:none;}
+  .dot.blue{background:var(--blue);}
+  .dot.orange{background:var(--orange);}
+  .col-label.blue-text{color:var(--blue);}
+  .col-label.orange-text{color:var(--orange);}
+
+  .vid-frame{position:relative; border-radius:10px; overflow:hidden; background:#000; aspect-ratio:4/3; border:1px solid var(--line); cursor:pointer;}
+  .vid-frame video{width:100%; height:100%; object-fit:cover; display:block;}
+  .vid-badge{
+    position:absolute; left:8px; top:8px; background:rgba(10,10,14,0.62); color:#fff; font-size:0.72rem;
+    font-weight:700; padding:3px 9px; border-radius:999px; backdrop-filter:blur(3px);
+  }
+  .vid-play-btn{
+    position:absolute; inset:0; margin:auto; width:52px; height:52px; padding:0; border:none; border-radius:50%;
+    background:rgba(10,10,14,0.62); color:#fff; display:flex; align-items:center; justify-content:center;
+    cursor:pointer; backdrop-filter:blur(3px); transition:opacity .15s ease, background .15s ease;
+  }
+  .vid-play-btn:hover{background:rgba(10,10,14,0.82);}
+  .vid-play-btn svg{width:20px; height:20px; margin-left:2px;}
+  .vid-frame.playing .vid-play-btn{opacity:0; pointer-events:none;}
+  .vid-cap{margin-top:8px; font-size:0.82rem; color:var(--ink-faint); display:flex; gap:8px;}
+
+  .duo-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:14px;}
+  @media (max-width:560px){ .duo-grid{grid-template-columns:1fr; max-width:340px; margin:0 auto;} }
+
+  .na-note{font-size:0.78rem; color:var(--ink-faint); font-style:italic; margin-top:6px;}
+
+  /* Results */
+  .fig-card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); padding:22px; }
+  .two-col{display:grid; grid-template-columns:1fr 1fr; gap:26px;}
+  @media (max-width:860px){ .two-col{grid-template-columns:1fr;} }
+
+  table{width:100%; border-collapse:collapse; font-size:0.92rem; margin-top:6px;}
+  th,td{padding:10px 12px; text-align:center; border-bottom:1px solid var(--line);}
+  th{font-size:0.74rem; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-faint); font-weight:700; text-align:center;}
+  td:first-child, th:first-child{text-align:left;}
+  tbody tr:hover{background:var(--bg-alt);}
+  .table-wrap{overflow-x:auto; background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); padding:18px 20px;}
+
+  .callout{
+    border-left:3px solid var(--blue); background:var(--blue-soft); border-radius:0 10px 10px 0;
+    padding:14px 18px; font-size:0.92rem; color:var(--ink-soft); margin-top:18px;
+  }
+  .callout b{color:var(--ink);}
+
+  /* Qualitative */
+  .qual-fig{max-width:760px; margin:0 auto;}
+
+  /* Footer / bibtex */
+  pre{
+    background:var(--bg-alt); border:1px solid var(--line); border-radius:10px; padding:16px 18px;
+    font-size:0.82rem; overflow-x:auto; color:var(--ink-soft); line-height:1.5;
+  }
+  footer{padding:40px 0 60px; color:var(--ink-faint); font-size:0.85rem;}
+  footer a{color:var(--ink-faint); text-decoration:underline;}
+
+  .section-divider{height:1px; background:var(--line); margin:0;}
+
+  ::selection{background:var(--blue); color:#fff;}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <div class="brand">DAPPT</div>
+    <div class="links">
+      <a href="#abstract">Abstract</a>
+      <a href="#method">Method</a>
+      <a href="#videos">Videos</a>
+      <a href="#results">Results</a>
+      <a href="#qualitative">Qualitative</a>
+      <a href="">Paper (PDF)</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <h1 class="title">DAPPT: Domain-Aware Policies from Procedural Trajectories for Sim-to-Real Dexterous Manipulation</h1>
+    <p class="subtitle">A sim-to-real framework that learns end-to-end dexterous skills — sand scooping, play-dough rod-rolling — without simulating non-rigid materials or requiring reference trajectories at test time.</p>
+
+    <div class="authors">
+      Beining Han &nbsp;·&nbsp; Jia Deng
+      <span class="aff">Princeton University</span>
+    </div>
+
+    <div class="cta-row">
+      <a class="btn primary" href="latex/root.pdf">📄 Read the Paper</a>
+      <a class="btn" href="#videos">▶ Watch the 6 Tasks</a>
+    </div>
+
+    <figure class="hero-fig">
+      <img src="assets/figures/all_tasks_best.png" alt="All six manipulation tasks: scooping, rod-rolling, scraping, mouse-wheel, dispenser, spray">
+    </figure>
+    <figcaption>DAPPT learns dexterous skills on a 19-DoF hand–arm system (XHand1 + Franka Research 3) in rigid-body simulation and transfers zero-shot to the real world. The left three are tool-use skills — scraping sand, rolling play-dough with a rod, and scooping sand. The right three manipulate articulated objects — scrolling a mouse wheel, pressing a dispenser, and pulling a spray trigger.</figcaption>
+  </div>
+</header>
+
+<section id="abstract" class="tight">
+  <div class="wrap">
+    <h2><span class="kicker">Abstract</span>Test-time optimization for tasks you can't simulate</h2>
+    <div class="abstract-card">
+      <p class="lede" style="margin-bottom:0;">
+        Sim-to-real RL has achieved impressive results in dexterous manipulation but remains limited to tasks with accurate rigid-body simulation or methods that require reference trajectories during deployment. We present DAPPT, a sim-to-real framework for end-to-end dexterous manipulation skills, e.g., sand scooping, play-dough rod-rolling, without simulating non-rigid materials or referenced test-time trajectories. Our method learns a domain-aware RL policy by tracking procedural trajectories parameterized by domain parameters, and distills it into an end-to-end sensorimotor policy, conditioned on the domain parameter. Furthermore, explicit domain representation enables efficient test-time optimization to maximize downstream task performance. We evaluate \method{} end-to-end on six dexterous manipulation tasks, including sand scooping, play-dough rod-rolling, sand scraping, mouse-wheel scrolling, dispenser pressing, and spray triggering. Our method achieves 1.5-3x improvements in task metrics through test-time optimization and transfers zero-shot to the real world.</p>
+    </div>
+  </div>
+</section>
+
+<section id="method" class="alt border-top">
+  <div class="wrap">
+    <h2><span class="kicker">Method</span>Track procedural trajectories, not a fixed demonstration</h2>
+    <div class="method-text">
+      <p>Instead of imitating a single human-collected trajectory, DAPPT defines each task by a small set of <b>domain parameters</b> <code>c</code> — geometric or physical quantities such as insertion angle, insertion distance, or approach velocity. A time-dependent function <code>T(c;t)</code> turns any choice of <code>c</code> into a full procedural trajectory of target 6D poses and joint values, e.g. for sand scooping, <code>c = {α, d, v<sub>i</sub>, v<sub>l</sub>}</code> is the scoop's insertion angle, insertion depth, and insertion/lift speeds.</p>
+      <p>A policy <code>π(p; o; c)</code> is trained to track this trajectory for <i>any</i> sampled <code>c</code>, taking robot proprioception <code>p</code>, a point cloud <code>o</code>, and the domain parameters themselves as input. Because <code>c</code> is explicit and carried all the way into the deployed policy, it becomes a search variable at test time: DAPPT randomly searches over <code>c</code> to find the configuration that maximizes the real task metric — e.g. grams of sand scooped, or centimeters of dough rolled — with no reference trajectory needed at deployment.</p>
+    </div>
+    <ul class="stage-list">
+      <li><span class="stage-num">1</span><div><b>Transport (infinite-horizon MDP).</b> Move the object and reach the target contact state (e.g. grip the scoop) before trajectory tracking begins.</div></li>
+      <li><span class="stage-num">2</span><div><b>Tracking (finite-horizon MDP).</b> Follow the procedural trajectory's per-step target poses / joint values with contact-aware rewards, e.g. rolling contact shifts from fingertips to knuckles during rod-rolling.</div></li>
+      <li><span class="stage-num">3</span><div><b>Distillation.</b> DAgger distills the state-based teacher into a vision-based, domain-aware student <code>π(p;o;c)</code> using a point cloud from a single third-person depth camera.</div></li>
+    </ul>
+    <figure class="fig-card method-fig">
+      <img src="assets/figures/method.png" alt="Domain-aware policy diagram: proprioception, point-cloud, and domain parameters feed a policy that tracks procedural trajectories T(c;t)">
+    </figure>
+    <div class="cap">The domain-aware policy π(p;o;c) tracks procedural trajectories T(c;t). Shown here: the scooping task's four domain parameters — insertion angle α, insertion distance d, and insertion / lift speeds v<sub>i</sub>, v<sub>l</sub>.</div>
+  </div>
+</section>
+
+<section id="videos" class="border-top">
+  <div class="wrap">
+    <h2><span class="kicker">Videos</span>Six dexterous tasks, sim and real</h2>
+    <p class="lede">For every task below: on the <span class="col-label blue-text" style="display:inline-flex"><span class="dot blue"></span>&nbsp;left</span> is the sim-to-sim rollout in <a href="https://genesis-embodied-ai.github.io/" target="_blank" rel="noopener">Genesis</a> under the single best-performing domain parameter setting out of dozens sampled — the same "Genesis Best" configuration used for real-world deployment. On the <span class="col-label orange-text" style="display:inline-flex"><span class="dot orange"></span>&nbsp;right</span> are two real-robot trials, out of 20 zero-shot rollouts per task.</p>
+
+    <!-- SCOOPING -->
+    <div class="task-row">
+      <div class="task-row-head"><h3><span class="task-idx">01</span>Scooping</h3></div>
+      <p class="metric-def">Use the scoop to lift as much sand as possible from the container. <b>Task metric:</b> sand weight in the scoop.</p>
+      <div class="real-stats"><span><b>20/20</b> motion success</span><span><b>14/20</b> task success</span><span><b>7.7 g</b> avg. task metric (real)</span></div>
+      <div class="video-columns">
+        <div>
+          <div class="col-label blue-text"><span class="dot blue"></span>Genesis Rollout</div>
+          <div class="vid-frame"><span class="vid-badge">Genesis Best</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/scoop/genesis_best.webm" type="video/webm"></video></div>
+        </div>
+        <div>
+          <div class="col-label orange-text"><span class="dot orange"></span>Real Rollouts</div>
+          <div class="duo-grid">
+            <div><div class="vid-frame"><span class="vid-badge">#1</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/scoop/real_top1.webm" type="video/webm"></video></div></div>
+            <div><div class="vid-frame"><span class="vid-badge">#2</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/scoop/real_top2.webm" type="video/webm"></video></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROD-ROLLING -->
+    <div class="task-row">
+      <div class="task-row-head"><h3><span class="task-idx">02</span>Rod-Rolling</h3></div>
+      <p class="metric-def">Roll the rod over play-dough, maximizing coverage. <b>Task metric:</b> maximal forward (x-axis) distance the rod rolls over the dough.</p>
+      <div class="real-stats"><span><b>16/20</b> motion success</span><span><b>11/20</b> task success</span><span><b>2.7 cm</b> avg. task metric (real)</span></div>
+      <div class="video-columns">
+        <div>
+          <div class="col-label blue-text"><span class="dot blue"></span>Genesis Rollout</div>
+          <div class="vid-frame"><span class="vid-badge">Genesis Best</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/rodroll/genesis_best.webm" type="video/webm"></video></div>
+        </div>
+        <div>
+          <div class="col-label orange-text"><span class="dot orange"></span>Real Rollouts</div>
+          <div class="duo-grid">
+            <div><div class="vid-frame"><span class="vid-badge">#1</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/rodroll/real_top1.webm" type="video/webm"></video></div></div>
+            <div><div class="vid-frame"><span class="vid-badge">#2</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/rodroll/real_top2.webm" type="video/webm"></video></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCRAPING -->
+    <div class="task-row">
+      <div class="task-row-head"><h3><span class="task-idx">03</span>Scraping</h3></div>
+      <p class="metric-def">Scrape sand forward into the front of the table without it slipping off the sides. <b>Task metric:</b> share of sand successfully scraped forward (paper reports the inverse — remaining un-scraped proportion, lower is better).</p>
+      <div class="real-stats"><span><b>19/20</b> motion success</span><span><b>19/20</b> task success</span><span><b>29%</b> avg. remaining un-scraped (real)</span></div>
+      <div class="video-columns">
+        <div>
+          <div class="col-label blue-text"><span class="dot blue"></span>Genesis Rollout</div>
+          <div class="vid-frame"><span class="vid-badge">Genesis Best</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/scrape/genesis_best.webm" type="video/webm"></video></div>
+        </div>
+        <div>
+          <div class="col-label orange-text"><span class="dot orange"></span>Real Rollouts</div>
+          <div class="duo-grid">
+            <div><div class="vid-frame"><span class="vid-badge">#1</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/scrape/real_top1.webm" type="video/webm"></video></div></div>
+            <div><div class="vid-frame"><span class="vid-badge">#2</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/scrape/real_top2.webm" type="video/webm"></video></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MOUSE-WHEEL -->
+    <div class="task-row">
+      <div class="task-row-head"><h3><span class="task-idx">04</span>Mouse-Wheel</h3></div>
+      <p class="metric-def">Scroll a mouse's wheel as far as possible with a single swing of a finger — challenging due to the wheel's small size and noisy depth readings. <b>Task metric:</b>  recorded scroll-roll distance (real, via <code>pynput</code>).</p>
+      <div class="real-stats"><span><b>19/20</b> motion success</span><span><b>19/20</b> task success</span><span><b>0.33 rad</b> avg. task metric (real)</span></div>
+      <div class="video-columns">
+        <div>
+          <div class="col-label blue-text"><span class="dot blue"></span>Genesis Rollout</div>
+          <div class="vid-frame"><span class="vid-badge">Genesis Best</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/mouse/genesis_best.webm" type="video/webm"></video></div>
+        </div>
+        <div>
+          <div class="col-label orange-text"><span class="dot orange"></span>Real Rollouts</div>
+          <div class="duo-grid">
+            <div><div class="vid-frame"><span class="vid-badge">#1</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/mouse/real_top1.webm" type="video/webm"></video></div></div>
+            <div><div class="vid-frame"><span class="vid-badge">#2</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/mouse/real_top2.webm" type="video/webm"></video></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DISPENSER -->
+    <div class="task-row">
+      <div class="task-row-head"><h3><span class="task-idx">05</span>Dispenser</h3></div>
+      <p class="metric-def">Press the dispenser head down. <b>Task metric:</b> simulated amount of liquid emitted.</p>
+      <div class="real-stats"><span><b>18/20</b> motion success</span><span><b>14/20</b> task success</span><span>Task metric N/A in the real world — liquid emission was excluded for hardware safety</span></div>
+      <div class="video-columns">
+        <div>
+          <div class="col-label blue-text"><span class="dot blue"></span>Genesis Rollout</div>
+          <div class="vid-frame"><span class="vid-badge">Genesis Best</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/dispenser/genesis_best.webm" type="video/webm"></video></div>
+        </div>
+        <div>
+          <div class="col-label orange-text"><span class="dot orange"></span>Real Rollouts</div>
+          <div class="duo-grid">
+            <div><div class="vid-frame"><span class="vid-badge">#1</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/dispenser/real_top1.webm" type="video/webm"></video></div></div>
+            <div><div class="vid-frame"><span class="vid-badge">#2</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/dispenser/real_top2.webm" type="video/webm"></video></div></div>
+          </div>
+          <div class="na-note">No liquid was dispensed during real trials.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SPRAY -->
+    <div class="task-row">
+      <div class="task-row-head"><h3><span class="task-idx">06</span>Spray</h3></div>
+      <p class="metric-def">Grasp and lift the spray bottle, then press the trigger. <b>Task metric:</b> simulated amount of liquid sprayed.</p>
+      <div class="real-stats"><span><b>16/20</b> motion success</span><span><b>10/20</b> task success</span><span>Task metric N/A in the real world — liquid emission was excluded for hardware safety</span></div>
+      <div class="video-columns">
+        <div>
+          <div class="col-label blue-text"><span class="dot blue"></span>Genesis Rollout</div>
+          <div class="vid-frame"><span class="vid-badge">Genesis Best</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/spray/genesis_best.webm" type="video/webm"></video></div>
+        </div>
+        <div>
+          <div class="col-label orange-text"><span class="dot orange"></span>Real Rollouts</div>
+          <div class="duo-grid">
+            <div><div class="vid-frame"><span class="vid-badge">#1</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/spray/real_top1.webm" type="video/webm"></video></div></div>
+            <div><div class="vid-frame"><span class="vid-badge">#2</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/spray/real_top2.webm" type="video/webm"></video></div></div>
+          </div>
+          <div class="na-note">No liquid was sprayed during real trials.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section id="results" class="alt border-top">
+  <div class="wrap">
+    <h2><span class="kicker">Results — Sim-to-Sim Transfer</span>Test-time optimization pays off — and doesn't need better tracking</h2>
+    <p>DAPPT's policies are transferred sim-to-sim into <a href="https://genesis-embodied-ai.github.io/" target="_blank" rel="noopener">Genesis</a>, which simulates the non-rigid sand and play-dough with an MPM solver coupled to the rigid-body dynamics. For each task, dozens of domain parameter settings are sampled and evaluated over multiple episodes each; <i>Genesis Avg</i> is the mean across all sampled settings, and <i>Genesis Best</i> is the single setting that maximizes the task metric.</p>
+    <div class="fig-card">
+      <img src="assets/figures/tracking_metric_bar.png" alt="Bar chart: percentage difference of Genesis Best over Genesis Avg, for tracking error and task metric, across all six tasks">
+    </div>
+    <div class="cap">Percentage difference of <i>Genesis Best</i> over <i>Genesis Avg</i>, for both the average per-step tracking error (pose / joint value) and the task metric. Test-time search over domain parameters improves the task metric by <b>0.5–2.8×</b> everywhere — even on Dispenser and Spray, where the best-metric setting actually has <i>worse</i> (higher) tracking error than average.</div>
+
+    <div class="callout">
+      <b>Task metric ≠ tracking accuracy.</b> The improvement from choosing better domain parameters is not explained by tracking the procedural trajectory more precisely. On Dispenser and Spray, the best-metric parameter setting has a <i>higher</i> tracking error than the population average (−7.4% and −4.5% in the chart above — i.e. the "best" bar is negative).
+    </div>
+
+    <h3 style="margin-top:40px;">Why an explicit domain-aware policy is necessary</h3>
+    <p>Replacing the domain-aware policy with a single policy trained only on the fixed <i>Genesis Best</i> trajectory — i.e. no conditioning on <code>c</code>, no test-time search — causes task performance to collapse, even though the trajectory it's tracking is the same good reference:</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th></th><th>Mouse-Wheel</th><th>Dispenser</th><th>Scoop</th></tr></thead>
+        <tbody>
+          <tr><td>Domain-Aware (ours)</td><td>0.37 rad</td><td>#2.26k</td><td>13.9 g</td></tr>
+          <tr><td>Fixed-Domain</td><td>0.19 rad</td><td>#0.96k</td><td>0.32 g</td></tr>
+          <tr><td><b>Performance drop</b></td><td><b>48.6%</b></td><td><b>57.5%</b></td><td><b>97.7%</b></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:14px;">Small tracking errors compound into large task-performance differences in contact-rich tasks — the fixed-domain policy in Scoop, for instance, retains almost none of the sand. Test-time domain optimization jointly accounts for the reference trajectory <i>and</i> the policy's tracking error and environment forces.</p>
+  </div>
+</section>
+
+
+<section id="qualitative" class="alt border-top">
+  <div class="wrap">
+    <h2><span class="kicker">Qualitative Analysis</span>Domain parameters produce interpretable, controllable behavior</h2>
+    <div class="two-col">
+      <div>
+        <figure class="fig-card qual-fig">
+          <img src="assets/figures/qualitative_compare.png" alt="Qualitative comparison of Genesis Best vs. other domain parameters on Scoop, Scrape, and Rod-Roll">
+        </figure>
+      </div>
+      <div>
+        <p>Because domain parameters have direct physical meaning, their effect on behavior is interpretable in the real world too:</p>
+        <ul style="color:var(--ink-soft); padding-left:1.2em; margin:0 0 1em;">
+          <li style="margin-bottom:10px;"><b style="color:var(--ink)">Scooping</b> — averaging all 4 domain parameters over their sampling range yields 2.9 g of scooped sand across 10 trials; the <i>Genesis Best</i> parameter setting reaches 7.7 g.</li>
+          <li style="margin-bottom:10px;"><b style="color:var(--ink)">Rod-Rolling</b> — a smaller target rolling velocity produces firmer contact and deeper play-dough deformation; a faster velocity shortens the contact window and rolls shallower.</li>
+          <li style="margin-bottom:10px;"><b style="color:var(--ink)">Scraping</b> — the <i>Genesis Best</i> parameter targets a scraper height slightly above the table (leaving more sand behind), while a lower target height closes the gap and leaves a visibly cleaner table.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="border-top">
+  <div class="wrap">
+    <h3 style="color:var(--ink); font-size:1rem;">Citation</h3>
+    <pre>@article{han2026dappt,
+  title   = {DAPPT: Domain-Aware Policies from Procedural Trajectories
+             for Sim-to-Real Dexterous Manipulation},
+  author  = {Han, Beining and Deng, Jia},
+  journal = {Princeton University},
+  year    = {2026}
+}</pre>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var frames = Array.prototype.slice.call(document.querySelectorAll('.vid-frame'));
+  frames.forEach(function(frame){
+    var v = frame.querySelector('video');
+    var sources = v ? Array.prototype.slice.call(v.querySelectorAll('source[data-src]')) : [];
+    if (!v || !sources.length) return;
+
+    var btn = document.createElement('button');
+    btn.className = 'vid-play-btn';
+    btn.type = 'button';
+    btn.setAttribute('aria-label', 'Play video');
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+    frame.appendChild(btn);
+
+    function playOnce(){
+      if (!sources[0].src) {
+        sources.forEach(function(s){ s.src = s.dataset.src; });
+        v.load();
+      }
+      frame.classList.add('playing');
+      v.currentTime = 0;
+      var p = v.play();
+      if (p && p.catch) p.catch(function(){ frame.classList.remove('playing'); });
+    }
+
+    frame.addEventListener('click', function(){
+      if (!frame.classList.contains('playing')) playOnce();
+    });
+    v.addEventListener('ended', function(){
+      frame.classList.remove('playing');
+    });
+  });
+})();
+</script>
+
+</body>
+</html>
