@@ -73,18 +73,6 @@
   .border-top{border-top:1px solid var(--line);}
   .alt{background:var(--bg-alt);}
 
-  /* Nav */
-  nav{
-    position:sticky; top:0; z-index:50; backdrop-filter: blur(10px);
-    background: color-mix(in srgb, var(--bg) 82%, transparent);
-    border-bottom:1px solid var(--line);
-  }
-  nav .wrap{display:flex; align-items:center; justify-content:space-between; height:56px; gap:16px;}
-  nav .brand{font-weight:700; font-size:0.95rem; white-space:nowrap;}
-  nav .links{display:flex; gap:22px; flex-wrap:wrap; font-size:0.88rem;}
-  nav .links a{color:var(--ink-soft); font-weight:500;}
-  nav .links a:hover{color:var(--blue); text-decoration:none;}
-
   /* Hero */
   .hero{padding:56px 0 8px;}
   .hero .title{font-size:2.35rem; line-height:1.15; max-width:900px;}
@@ -112,17 +100,6 @@
 
   /* Pipeline / method */
   .method-text{max-width:900px;}
-  .stage-list{list-style:none; margin:20px 0 0; padding:0; display:flex; gap:16px;}
-  @media (max-width: 760px){ .stage-list{flex-direction:column;} }
-  .stage-list li{
-    flex:1; display:flex; flex-direction:column; align-items:flex-start; gap:10px; padding:16px 18px;
-    background:var(--card); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow);
-  }
-  .stage-num{
-    flex:none; width:28px; height:28px; border-radius:50%; background:var(--blue-soft); color:var(--blue);
-    font-weight:700; font-size:0.85rem; display:flex; align-items:center; justify-content:center;
-  }
-  .stage-list b{color:var(--ink);}
   .method-fig{margin-top:32px;}
   .method-fig img{margin:0 auto;}
 
@@ -216,32 +193,18 @@
 </head>
 <body>
 
-<nav>
-  <div class="wrap">
-    <div class="brand">DAPPT</div>
-    <div class="links">
-      <a href="#abstract">Abstract</a>
-      <a href="#method">Method</a>
-      <a href="#videos">Videos</a>
-      <a href="#results">Results</a>
-      <a href="#qualitative">Qualitative</a>
-      <a href="">Paper (PDF)</a>
-    </div>
-  </div>
-</nav>
-
 <header class="hero">
   <div class="wrap">
     <h1 class="title">DAPPT: Domain-Aware Policies from Procedural Trajectories for Sim-to-Real Dexterous Manipulation</h1>
-    <p class="subtitle">A sim-to-real framework that learns end-to-end dexterous skills — sand scooping, play-dough rod-rolling — without simulating non-rigid materials or requiring reference trajectories at test time.</p>
 
     <div class="authors">
-      Beining Han &nbsp;·&nbsp; Jia Deng
+      <a href="https://beininghan.github.io/">Beining Han</a> &nbsp;·&nbsp; <a href="https://www.cs.princeton.edu/~jiadeng/">Jia Deng</a>
       <span class="aff">Princeton University</span>
     </div>
 
     <div class="cta-row">
-      <a class="btn primary" href="latex/root.pdf">📄 Read the Paper</a>
+      <a class="btn primary" href="latex/root.pdf">📄 Paper</a>
+      <a class="btn" href="#">💻 Code</a>
       <a class="btn" href="#videos">▶ Watch the 6 Tasks</a>
     </div>
 
@@ -266,25 +229,71 @@
   <div class="wrap">
     <h2><span class="kicker">Method</span>Track procedural trajectories, not a fixed demonstration</h2>
     <div class="method-text">
-      <p>Instead of imitating a single human-collected trajectory, DAPPT defines each task by a small set of <b>domain parameters</b> <code>c</code> — geometric or physical quantities such as insertion angle, insertion distance, or approach velocity. A time-dependent function <code>T(c;t)</code> turns any choice of <code>c</code> into a full procedural trajectory of target 6D poses and joint values, e.g. for sand scooping, <code>c = {α, d, v<sub>i</sub>, v<sub>l</sub>}</code> is the scoop's insertion angle, insertion depth, and insertion/lift speeds.</p>
-      <p>A policy <code>π(p; o; c)</code> is trained to track this trajectory for <i>any</i> sampled <code>c</code>, taking robot proprioception <code>p</code>, a point cloud <code>o</code>, and the domain parameters themselves as input. Because <code>c</code> is explicit and carried all the way into the deployed policy, it becomes a search variable at test time: DAPPT randomly searches over <code>c</code> to find the configuration that maximizes the real task metric — e.g. grams of sand scooped, or centimeters of dough rolled — with no reference trajectory needed at deployment.</p>
+      <p>DAPPT defines each task with a small set of <b>domain parameters</b> — physical quantities such as insertion angle, insertion depth, or approach speed. A function converts any chosen parameters into a full trajectory of target poses and joint values for the robot to follow.</p>
+      <p>A single policy is trained to track this trajectory for any sampled parameters, using robot proprioception, a point cloud, and the parameters themselves as input. Because the parameters stay explicit all the way into the deployed policy, they can be searched over at test time to find the setting that maximizes real task performance — e.g. grams of sand scooped, or centimeters of dough rolled — with no reference trajectory needed at deployment.</p>
     </div>
-    <ul class="stage-list">
-      <li><span class="stage-num">1</span><div><b>Transport (infinite-horizon MDP).</b> Move the object and reach the target contact state (e.g. grip the scoop) before trajectory tracking begins.</div></li>
-      <li><span class="stage-num">2</span><div><b>Tracking (finite-horizon MDP).</b> Follow the procedural trajectory's per-step target poses / joint values with contact-aware rewards, e.g. rolling contact shifts from fingertips to knuckles during rod-rolling.</div></li>
-      <li><span class="stage-num">3</span><div><b>Distillation.</b> DAgger distills the state-based teacher into a vision-based, domain-aware student <code>π(p;o;c)</code> using a point cloud from a single third-person depth camera.</div></li>
-    </ul>
     <figure class="fig-card method-fig">
       <img src="assets/figures/method.png" alt="Domain-aware policy diagram: proprioception, point-cloud, and domain parameters feed a policy that tracks procedural trajectories T(c;t)">
     </figure>
-    <div class="cap">The domain-aware policy π(p;o;c) tracks procedural trajectories T(c;t). Shown here: the scooping task's four domain parameters — insertion angle α, insertion distance d, and insertion / lift speeds v<sub>i</sub>, v<sub>l</sub>.</div>
+  </div>
+</section>
+
+
+<section id="results" class="alt border-top">
+  <div class="wrap">
+    <h2><span class="kicker">Experiments — Sim-to-Sim Transfer</span></h2>
+    <p>DAPPT's policies are transferred sim-to-sim into <a href="https://genesis-embodied-ai.github.io/" target="_blank" rel="noopener">Genesis</a>, which simulates the non-rigid sand and play-dough with an MPM solver coupled to the rigid-body dynamics. <i>Genesis Avg</i> is the mean across all sampled settings, and <i>Genesis Best</i> is the single setting that maximizes the task metric.</p>
+
+    <div class="task-pill-grid" style="margin-top:20px; margin-bottom:32px;">
+      <div>
+        <div class="vid-frame"><span class="vid-badge">Genesis Best</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/scoop/genesis_best.webm" type="video/webm"></video></div>
+        <div class="vid-cap">01 Scooping</div>
+      </div>
+      <div>
+        <div class="vid-frame"><span class="vid-badge">Genesis Best</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/rodroll/genesis_best.webm" type="video/webm"></video></div>
+        <div class="vid-cap">02 Rod-Rolling</div>
+      </div>
+      <div>
+        <div class="vid-frame"><span class="vid-badge">Genesis Best</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/scrape/genesis_best.webm" type="video/webm"></video></div>
+        <div class="vid-cap">03 Scraping</div>
+      </div>
+      <div>
+        <div class="vid-frame"><span class="vid-badge">Genesis Best</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/mouse/genesis_best.webm" type="video/webm"></video></div>
+        <div class="vid-cap">04 Mouse-Wheel</div>
+      </div>
+      <div>
+        <div class="vid-frame"><span class="vid-badge">Genesis Best</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/dispenser/genesis_best.webm" type="video/webm"></video></div>
+        <div class="vid-cap">05 Dispenser</div>
+      </div>
+      <div>
+        <div class="vid-frame"><span class="vid-badge">Genesis Best</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/spray/genesis_best.webm" type="video/webm"></video></div>
+        <div class="vid-cap">06 Spray</div>
+      </div>
+    </div>
+
+    <div class="fig-card">
+      <img src="assets/figures/tracking_metric_bar.png" alt="Bar chart: percentage difference of Genesis Best over Genesis Avg, for tracking error and task metric, across all six tasks">
+    </div>
+    <div class="cap">Percentage difference of <i>Genesis Best</i> over <i>Genesis Avg</i>, for both the average per-step tracking error (pose / joint value) and the task metric. </div>
+
+    <h3 style="margin-top:40px;">Why an explicit domain-aware policy is necessary</h3>
+    <p>Replacing the domain-aware policy with a single policy trained only on the fixed <i>Genesis Best</i> trajectory — i.e. no conditioning on <code>c</code>, no test-time search.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th></th><th>Mouse-Wheel</th><th>Dispenser</th><th>Scoop</th></tr></thead>
+        <tbody>
+          <tr><td>Domain-Aware (ours)</td><td>0.37 rad</td><td>#2.26k</td><td>13.9 g</td></tr>
+          <tr><td>Fixed-Domain</td><td>0.19 rad</td><td>#0.96k</td><td>0.32 g</td></tr>
+          <tr><td><b>Performance drop</b></td><td><b>48.6%</b></td><td><b>57.5%</b></td><td><b>97.7%</b></td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </section>
 
 <section id="videos" class="border-top">
   <div class="wrap">
-    <h2><span class="kicker">Videos</span>Six dexterous tasks, sim and real</h2>
-    <p class="lede">For every task below: on the <span class="col-label blue-text" style="display:inline-flex"><span class="dot blue"></span>&nbsp;left</span> is the sim-to-sim rollout in <a href="https://genesis-embodied-ai.github.io/" target="_blank" rel="noopener">Genesis</a> under the single best-performing domain parameter setting out of dozens sampled — the same "Genesis Best" configuration used for real-world deployment. On the <span class="col-label orange-text" style="display:inline-flex"><span class="dot orange"></span>&nbsp;right</span> are two real-robot trials, out of 20 zero-shot rollouts per task.</p>
+    <h2><span class="kicker">Experiment - Real-world</span></h2>
 
     <!-- SCOOPING -->
     <div class="task-row">
@@ -293,12 +302,8 @@
       <div class="real-stats"><span><b>20/20</b> motion success</span><span><b>14/20</b> task success</span><span><b>7.7 g</b> avg. task metric (real)</span></div>
       <div class="video-columns">
         <div>
-          <div class="col-label blue-text"><span class="dot blue"></span>Genesis Rollout</div>
-          <div class="vid-frame"><span class="vid-badge">Genesis Best</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/scoop/genesis_best.webm" type="video/webm"></video></div>
-        </div>
-        <div>
           <div class="col-label orange-text"><span class="dot orange"></span>Real Rollouts</div>
-          <div class="duo-grid">
+          <div class="duo-grid" style="max-width:480px;">
             <div><div class="vid-frame"><span class="vid-badge">#1</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/scoop/real_top1.webm" type="video/webm"></video></div></div>
             <div><div class="vid-frame"><span class="vid-badge">#2</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/scoop/real_top2.webm" type="video/webm"></video></div></div>
           </div>
@@ -313,12 +318,8 @@
       <div class="real-stats"><span><b>16/20</b> motion success</span><span><b>11/20</b> task success</span><span><b>2.7 cm</b> avg. task metric (real)</span></div>
       <div class="video-columns">
         <div>
-          <div class="col-label blue-text"><span class="dot blue"></span>Genesis Rollout</div>
-          <div class="vid-frame"><span class="vid-badge">Genesis Best</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/rodroll/genesis_best.webm" type="video/webm"></video></div>
-        </div>
-        <div>
           <div class="col-label orange-text"><span class="dot orange"></span>Real Rollouts</div>
-          <div class="duo-grid">
+          <div class="duo-grid" style="max-width:480px;">
             <div><div class="vid-frame"><span class="vid-badge">#1</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/rodroll/real_top1.webm" type="video/webm"></video></div></div>
             <div><div class="vid-frame"><span class="vid-badge">#2</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/rodroll/real_top2.webm" type="video/webm"></video></div></div>
           </div>
@@ -329,16 +330,12 @@
     <!-- SCRAPING -->
     <div class="task-row">
       <div class="task-row-head"><h3><span class="task-idx">03</span>Scraping</h3></div>
-      <p class="metric-def">Scrape sand forward into the front of the table without it slipping off the sides. <b>Task metric:</b> share of sand successfully scraped forward (paper reports the inverse — remaining un-scraped proportion, lower is better).</p>
-      <div class="real-stats"><span><b>19/20</b> motion success</span><span><b>19/20</b> task success</span><span><b>29%</b> avg. remaining un-scraped (real)</span></div>
+      <p class="metric-def">Scrape sand forward into the front of the table without it slipping off the sides. <b>Task metric:</b> share of sand successfully scraped forward.</p>
+      <div class="real-stats"><span><b>19/20</b> motion success</span><span><b>19/20</b> task success</span><span><b>71%</b> avg. task metric (real)</span></div>
       <div class="video-columns">
         <div>
-          <div class="col-label blue-text"><span class="dot blue"></span>Genesis Rollout</div>
-          <div class="vid-frame"><span class="vid-badge">Genesis Best</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/scrape/genesis_best.webm" type="video/webm"></video></div>
-        </div>
-        <div>
           <div class="col-label orange-text"><span class="dot orange"></span>Real Rollouts</div>
-          <div class="duo-grid">
+          <div class="duo-grid" style="max-width:480px;">
             <div><div class="vid-frame"><span class="vid-badge">#1</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/scrape/real_top1.webm" type="video/webm"></video></div></div>
             <div><div class="vid-frame"><span class="vid-badge">#2</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/scrape/real_top2.webm" type="video/webm"></video></div></div>
           </div>
@@ -349,16 +346,12 @@
     <!-- MOUSE-WHEEL -->
     <div class="task-row">
       <div class="task-row-head"><h3><span class="task-idx">04</span>Mouse-Wheel</h3></div>
-      <p class="metric-def">Scroll a mouse's wheel as far as possible with a single swing of a finger — challenging due to the wheel's small size and noisy depth readings. <b>Task metric:</b>  recorded scroll-roll distance (real, via <code>pynput</code>).</p>
+      <p class="metric-def">Scroll a mouse's wheel as far as possible with a single swing of a finger — challenging due to the wheel's small size and noisy depth readings. <b>Task metric:</b>  recorded scroll-roll distance (real).</p>
       <div class="real-stats"><span><b>19/20</b> motion success</span><span><b>19/20</b> task success</span><span><b>0.33 rad</b> avg. task metric (real)</span></div>
       <div class="video-columns">
         <div>
-          <div class="col-label blue-text"><span class="dot blue"></span>Genesis Rollout</div>
-          <div class="vid-frame"><span class="vid-badge">Genesis Best</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/mouse/genesis_best.webm" type="video/webm"></video></div>
-        </div>
-        <div>
           <div class="col-label orange-text"><span class="dot orange"></span>Real Rollouts</div>
-          <div class="duo-grid">
+          <div class="duo-grid" style="max-width:480px;">
             <div><div class="vid-frame"><span class="vid-badge">#1</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/mouse/real_top1.webm" type="video/webm"></video></div></div>
             <div><div class="vid-frame"><span class="vid-badge">#2</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/mouse/real_top2.webm" type="video/webm"></video></div></div>
           </div>
@@ -370,15 +363,11 @@
     <div class="task-row">
       <div class="task-row-head"><h3><span class="task-idx">05</span>Dispenser</h3></div>
       <p class="metric-def">Press the dispenser head down. <b>Task metric:</b> simulated amount of liquid emitted.</p>
-      <div class="real-stats"><span><b>18/20</b> motion success</span><span><b>14/20</b> task success</span><span>Task metric N/A in the real world — liquid emission was excluded for hardware safety</span></div>
+      <div class="real-stats"><span><b>18/20</b> motion success</span><span><b>14/20</b> task success</span></div>
       <div class="video-columns">
         <div>
-          <div class="col-label blue-text"><span class="dot blue"></span>Genesis Rollout</div>
-          <div class="vid-frame"><span class="vid-badge">Genesis Best</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/dispenser/genesis_best.webm" type="video/webm"></video></div>
-        </div>
-        <div>
           <div class="col-label orange-text"><span class="dot orange"></span>Real Rollouts</div>
-          <div class="duo-grid">
+          <div class="duo-grid" style="max-width:480px;">
             <div><div class="vid-frame"><span class="vid-badge">#1</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/dispenser/real_top1.webm" type="video/webm"></video></div></div>
             <div><div class="vid-frame"><span class="vid-badge">#2</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/dispenser/real_top2.webm" type="video/webm"></video></div></div>
           </div>
@@ -391,15 +380,11 @@
     <div class="task-row">
       <div class="task-row-head"><h3><span class="task-idx">06</span>Spray</h3></div>
       <p class="metric-def">Grasp and lift the spray bottle, then press the trigger. <b>Task metric:</b> simulated amount of liquid sprayed.</p>
-      <div class="real-stats"><span><b>16/20</b> motion success</span><span><b>10/20</b> task success</span><span>Task metric N/A in the real world — liquid emission was excluded for hardware safety</span></div>
+      <div class="real-stats"><span><b>16/20</b> motion success</span><span><b>10/20</b> task success</span></div>
       <div class="video-columns">
         <div>
-          <div class="col-label blue-text"><span class="dot blue"></span>Genesis Rollout</div>
-          <div class="vid-frame"><span class="vid-badge">Genesis Best</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/spray/genesis_best.webm" type="video/webm"></video></div>
-        </div>
-        <div>
           <div class="col-label orange-text"><span class="dot orange"></span>Real Rollouts</div>
-          <div class="duo-grid">
+          <div class="duo-grid" style="max-width:480px;">
             <div><div class="vid-frame"><span class="vid-badge">#1</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/spray/real_top1.webm" type="video/webm"></video></div></div>
             <div><div class="vid-frame"><span class="vid-badge">#2</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/spray/real_top2.webm" type="video/webm"></video></div></div>
           </div>
@@ -411,39 +396,9 @@
   </div>
 </section>
 
-<section id="results" class="alt border-top">
-  <div class="wrap">
-    <h2><span class="kicker">Results — Sim-to-Sim Transfer</span>Test-time optimization pays off — and doesn't need better tracking</h2>
-    <p>DAPPT's policies are transferred sim-to-sim into <a href="https://genesis-embodied-ai.github.io/" target="_blank" rel="noopener">Genesis</a>, which simulates the non-rigid sand and play-dough with an MPM solver coupled to the rigid-body dynamics. For each task, dozens of domain parameter settings are sampled and evaluated over multiple episodes each; <i>Genesis Avg</i> is the mean across all sampled settings, and <i>Genesis Best</i> is the single setting that maximizes the task metric.</p>
-    <div class="fig-card">
-      <img src="assets/figures/tracking_metric_bar.png" alt="Bar chart: percentage difference of Genesis Best over Genesis Avg, for tracking error and task metric, across all six tasks">
-    </div>
-    <div class="cap">Percentage difference of <i>Genesis Best</i> over <i>Genesis Avg</i>, for both the average per-step tracking error (pose / joint value) and the task metric. Test-time search over domain parameters improves the task metric by <b>0.5–2.8×</b> everywhere — even on Dispenser and Spray, where the best-metric setting actually has <i>worse</i> (higher) tracking error than average.</div>
-
-    <div class="callout">
-      <b>Task metric ≠ tracking accuracy.</b> The improvement from choosing better domain parameters is not explained by tracking the procedural trajectory more precisely. On Dispenser and Spray, the best-metric parameter setting has a <i>higher</i> tracking error than the population average (−7.4% and −4.5% in the chart above — i.e. the "best" bar is negative).
-    </div>
-
-    <h3 style="margin-top:40px;">Why an explicit domain-aware policy is necessary</h3>
-    <p>Replacing the domain-aware policy with a single policy trained only on the fixed <i>Genesis Best</i> trajectory — i.e. no conditioning on <code>c</code>, no test-time search — causes task performance to collapse, even though the trajectory it's tracking is the same good reference:</p>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th></th><th>Mouse-Wheel</th><th>Dispenser</th><th>Scoop</th></tr></thead>
-        <tbody>
-          <tr><td>Domain-Aware (ours)</td><td>0.37 rad</td><td>#2.26k</td><td>13.9 g</td></tr>
-          <tr><td>Fixed-Domain</td><td>0.19 rad</td><td>#0.96k</td><td>0.32 g</td></tr>
-          <tr><td><b>Performance drop</b></td><td><b>48.6%</b></td><td><b>57.5%</b></td><td><b>97.7%</b></td></tr>
-        </tbody>
-      </table>
-    </div>
-    <p style="margin-top:14px;">Small tracking errors compound into large task-performance differences in contact-rich tasks — the fixed-domain policy in Scoop, for instance, retains almost none of the sand. Test-time domain optimization jointly accounts for the reference trajectory <i>and</i> the policy's tracking error and environment forces.</p>
-  </div>
-</section>
-
-
 <section id="qualitative" class="alt border-top">
   <div class="wrap">
-    <h2><span class="kicker">Qualitative Analysis</span>Domain parameters produce interpretable, controllable behavior</h2>
+    <h2><span class="kicker">Experiment - Qualitative Interpretation</span></h2>
     <div class="two-col">
       <div>
         <figure class="fig-card qual-fig">
