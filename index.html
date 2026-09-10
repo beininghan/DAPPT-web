@@ -89,7 +89,12 @@
   .btn.primary{background:var(--ink); color:var(--bg); border-color:var(--ink);}
   .btn.primary:hover{opacity:0.88;}
 
-  .hero-fig{margin-top:40px; border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow); border:1px solid var(--line);}
+  .hero-video{margin:36px 0 0; max-width:960px;}
+  .hero-video .frame{
+    border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow);
+    border:1px solid var(--line); background:#000; line-height:0;
+  }
+  .hero-video video{width:100%; height:auto; display:block; aspect-ratio:1512/982; background:#000;}
   figcaption, .cap{font-size:0.88rem; color:var(--ink-faint); margin-top:10px; max-width:900px;}
 
   /* Abstract card */
@@ -126,7 +131,7 @@
   .real-stats{display:flex; gap:18px; flex-wrap:wrap; font-size:0.82rem; color:var(--ink-faint); margin-bottom:18px;}
   .real-stats span b{color:var(--ink-soft);}
 
-  .video-columns{display:grid; grid-template-columns: 1fr 1.6fr; gap:22px;}
+  .video-columns{display:grid; grid-template-columns: 1fr; gap:22px;}
   @media (max-width:860px){ .video-columns{grid-template-columns:1fr;} }
 
   .col-label{display:flex; align-items:center; gap:8px; font-size:0.78rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:10px;}
@@ -208,19 +213,22 @@
       <a class="btn" href="#videos">▶ Watch the 6 Tasks</a>
     </div>
 
-    <figure class="hero-fig">
-      <img src="assets/figures/all_tasks_best.png" alt="All six manipulation tasks: scooping, rod-rolling, scraping, mouse-wheel, dispenser, spray">
+    <figure class="hero-video">
+      <div class="frame">
+        <video src="assets/dappt_vis.mp4" controls autoplay muted loop playsinline preload="metadata"
+               aria-label="DAPPT overview video"></video>
+      </div>
+      <figcaption>Overview video — unmute in the player for narration.</figcaption>
     </figure>
-    <figcaption>DAPPT learns dexterous skills on a 19-DoF hand–arm system (XHand1 + Franka Research 3) in rigid-body simulation and transfers zero-shot to the real world. The left three are tool-use skills — scraping sand, rolling play-dough with a rod, and scooping sand. The right three manipulate articulated objects — scrolling a mouse wheel, pressing a dispenser, and pulling a spray trigger.</figcaption>
   </div>
 </header>
 
 <section id="abstract" class="tight">
   <div class="wrap">
-    <h2><span class="kicker">Abstract</span>Test-time optimization for tasks you can't simulate</h2>
+    <h2><span class="kicker">Abstract</span></h2>
     <div class="abstract-card">
       <p class="lede" style="margin-bottom:0;">
-        Sim-to-real RL has achieved impressive results in dexterous manipulation but remains limited to tasks with accurate rigid-body simulation or methods that require reference trajectories during deployment. We present DAPPT, a sim-to-real framework for end-to-end dexterous manipulation skills, e.g., sand scooping, play-dough rod-rolling, without simulating non-rigid materials or referenced test-time trajectories. Our method learns a domain-aware RL policy by tracking procedural trajectories parameterized by domain parameters, and distills it into an end-to-end sensorimotor policy, conditioned on the domain parameter. Furthermore, explicit domain representation enables efficient test-time optimization to maximize downstream task performance. We evaluate \method{} end-to-end on six dexterous manipulation tasks, including sand scooping, play-dough rod-rolling, sand scraping, mouse-wheel scrolling, dispenser pressing, and spray triggering. Our method achieves 1.5-3x improvements in task metrics through test-time optimization and transfers zero-shot to the real world.</p>
+        Sim-to-real RL has achieved impressive results in dexterous manipulation but remains limited to tasks with accurate rigid-body simulation or methods that require reference trajectories during deployment. We present DAPPT, a sim-to-real framework for end-to-end dexterous manipulation skills, e.g., sand scooping, play-dough rod-rolling, without simulating non-rigid materials or referenced test-time trajectories. Our method learns a domain-aware RL policy by tracking procedural trajectories parameterized by domain parameters, and distills it into an end-to-end sensorimotor policy, conditioned on the domain parameter. Furthermore, explicit domain representation enables efficient test-time optimization to maximize downstream task performance. We evaluate DAPPT end-to-end on six dexterous manipulation tasks, including sand scooping, play-dough rod-rolling, sand scraping, mouse-wheel scrolling, dispenser pressing, and spray triggering. Our method achieves 1.5-3x improvements in task metrics through test-time optimization and transfers zero-shot to the real world.</p>
     </div>
   </div>
 </section>
@@ -303,7 +311,7 @@
       <div class="video-columns">
         <div>
           <div class="col-label orange-text"><span class="dot orange"></span>Real Rollouts</div>
-          <div class="duo-grid" style="max-width:480px;">
+          <div class="duo-grid" style="max-width:576px;">
             <div><div class="vid-frame"><span class="vid-badge">#1</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/scoop/real_top1.webm" type="video/webm"></video></div></div>
             <div><div class="vid-frame"><span class="vid-badge">#2</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/scoop/real_top2.webm" type="video/webm"></video></div></div>
           </div>
@@ -319,7 +327,7 @@
       <div class="video-columns">
         <div>
           <div class="col-label orange-text"><span class="dot orange"></span>Real Rollouts</div>
-          <div class="duo-grid" style="max-width:480px;">
+          <div class="duo-grid" style="max-width:576px;">
             <div><div class="vid-frame"><span class="vid-badge">#1</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/rodroll/real_top1.webm" type="video/webm"></video></div></div>
             <div><div class="vid-frame"><span class="vid-badge">#2</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/rodroll/real_top2.webm" type="video/webm"></video></div></div>
           </div>
@@ -335,7 +343,7 @@
       <div class="video-columns">
         <div>
           <div class="col-label orange-text"><span class="dot orange"></span>Real Rollouts</div>
-          <div class="duo-grid" style="max-width:480px;">
+          <div class="duo-grid" style="max-width:576px;">
             <div><div class="vid-frame"><span class="vid-badge">#1</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/scrape/real_top1.webm" type="video/webm"></video></div></div>
             <div><div class="vid-frame"><span class="vid-badge">#2</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/scrape/real_top2.webm" type="video/webm"></video></div></div>
           </div>
@@ -351,7 +359,7 @@
       <div class="video-columns">
         <div>
           <div class="col-label orange-text"><span class="dot orange"></span>Real Rollouts</div>
-          <div class="duo-grid" style="max-width:480px;">
+          <div class="duo-grid" style="max-width:576px;">
             <div><div class="vid-frame"><span class="vid-badge">#1</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/mouse/real_top1.webm" type="video/webm"></video></div></div>
             <div><div class="vid-frame"><span class="vid-badge">#2</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/mouse/real_top2.webm" type="video/webm"></video></div></div>
           </div>
@@ -367,7 +375,7 @@
       <div class="video-columns">
         <div>
           <div class="col-label orange-text"><span class="dot orange"></span>Real Rollouts</div>
-          <div class="duo-grid" style="max-width:480px;">
+          <div class="duo-grid" style="max-width:576px;">
             <div><div class="vid-frame"><span class="vid-badge">#1</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/dispenser/real_top1.webm" type="video/webm"></video></div></div>
             <div><div class="vid-frame"><span class="vid-badge">#2</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/dispenser/real_top2.webm" type="video/webm"></video></div></div>
           </div>
@@ -384,7 +392,7 @@
       <div class="video-columns">
         <div>
           <div class="col-label orange-text"><span class="dot orange"></span>Real Rollouts</div>
-          <div class="duo-grid" style="max-width:480px;">
+          <div class="duo-grid" style="max-width:576px;">
             <div><div class="vid-frame"><span class="vid-badge">#1</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/spray/real_top1.webm" type="video/webm"></video></div></div>
             <div><div class="vid-frame"><span class="vid-badge">#2</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/spray/real_top2.webm" type="video/webm"></video></div></div>
           </div>
