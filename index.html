@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DAPPT: Domain-Aware Policies from Procedural Trajectories</title>
-<meta name="description" content="Sim-to-real dexterous manipulation via domain-aware procedural trajectory tracking — scooping, rod-rolling, scraping, mouse-wheel, dispenser, spray.">
+<title>DAPPT: Domain-Aware Policies from Procedural Trajectories for Sim-to-Real Dexterous Tool Use</title>
+<meta name="description" content="Sim-to-real dexterous tool use via domain-aware procedural trajectory tracking — scooping, rod-rolling, scraping, mouse-wheel, dispenser, spray.">
 <style>
   :root{
     --ink:#16181c;
@@ -200,7 +200,7 @@
 
 <header class="hero">
   <div class="wrap">
-    <h1 class="title">DAPPT: Domain-Aware Policies from Procedural Trajectories for Sim-to-Real Dexterous Manipulation</h1>
+    <h1 class="title">DAPPT: Domain-Aware Policies from Procedural Trajectories for Sim-to-Real Dexterous Tool Use</h1>
 
     <div class="authors">
       <a href="https://beininghan.github.io/">Beining Han</a> &nbsp;·&nbsp; <a href="https://www.cs.princeton.edu/~jiadeng/">Jia Deng</a>
@@ -228,7 +228,7 @@
     <h2><span class="kicker">Abstract</span></h2>
     <div class="abstract-card">
       <p class="lede" style="margin-bottom:0;">
-        Sim-to-real RL has achieved impressive results in dexterous manipulation but remains limited to tasks with accurate rigid-body simulation or methods that require reference trajectories during deployment. We present DAPPT, a sim-to-real framework for end-to-end dexterous manipulation skills, e.g., sand scooping, play-dough rod-rolling, without simulating non-rigid materials or referenced test-time trajectories. Our method learns a domain-aware RL policy by tracking procedural trajectories parameterized by domain parameters, and distills it into an end-to-end sensorimotor policy, conditioned on the domain parameter. Furthermore, explicit domain representation enables efficient test-time optimization to maximize downstream task performance. We evaluate DAPPT end-to-end on six dexterous manipulation tasks, including sand scooping, play-dough rod-rolling, sand scraping, mouse-wheel scrolling, dispenser pressing, and spray triggering. Our method achieves 1.5-3x improvements in task metrics through test-time optimization and transfers zero-shot to the real world.</p>
+        Sim-to-real RL has achieved impressive results in dexterous manipulation but remains limited to tasks with accurate rigid-body simulation. However, these methods cannot be applied to skills that involve deformables and particles, for which simulation becomes too slow for large-scale RL. We present DAPPT, a sim-to-real framework for end-to-end dexterous tool-use skills, e.g., sand scooping and play-dough rod-rolling, without simulating non-rigid materials. Our method learns a domain-aware RL policy by tracking procedural trajectories parameterized by domain parameters, and distills it into an end-to-end domain-aware sensorimotor policy. Furthermore, the explicit domain representation enables fast selection of the domain parameters that maximize downstream task performance. We evaluate DAPPT end-to-end on six dexterous manipulation tasks, including sand scooping, play-dough rod-rolling, sand scraping, mouse-wheel scrolling, dispenser pressing, and spray triggering. Our method achieves 1.5&ndash;3.8&times; improvements in task metrics through the best domain parameters and transfers zero-shot to the real world.</p>
     </div>
   </div>
 </section>
@@ -237,8 +237,9 @@
   <div class="wrap">
     <h2><span class="kicker">Method</span>Track procedural trajectories, not a fixed demonstration</h2>
     <div class="method-text">
-      <p>DAPPT defines each task with a small set of <b>domain parameters</b> — physical quantities such as insertion angle, insertion depth, or approach speed. A function converts any chosen parameters into a full trajectory of target poses and joint values for the robot to follow.</p>
-      <p>A single policy is trained to track this trajectory for any sampled parameters, using robot proprioception, a point cloud, and the parameters themselves as input. Because the parameters stay explicit all the way into the deployed policy, they can be searched over at test time to find the setting that maximizes real task performance — e.g. grams of sand scooped, or centimeters of dough rolled — with no reference trajectory needed at deployment.</p>
+      <p>Scooping sand or rolling play-dough would require simulating particles and elasto-plastic material — far too slow for large-scale RL. DAPPT sidesteps this: it only simulates the <b>rigid tool</b>, and trains the robot to track a reference trajectory of tool poses (or joint values for articulated tools).</p>
+      <p>These references are <b>procedural trajectories</b> — generated algorithmically from a small set of <b>domain parameters</b> <code>c</code>. For scooping, <code>c = {&alpha;, d, v<sub>i</sub>, v<sub>l</sub>}</code>: the insertion angle, insertion distance, and the insertion and lifting speeds, which together define a time-conditioned 6D scoop trajectory <code>T(c;t)</code> relative to the sand surface. Not every such trajectory works well in the real world, and without simulating the sand we cannot tell in advance which ones do.</p>
+      <p>So instead of committing to one trajectory, DAPPT trains a <b>domain-aware policy</b> <code>&pi;(p;o;c)</code> that takes the domain parameters as an extra input, with <code>c</code> randomized during training. A state-based RL teacher (PPO, with contact rewards and a few teleoperated demos) is distilled with DAgger into a point-cloud sensorimotor policy. After training, <b>domain identification</b> — a cheap random search over <code>c</code> in a high-fidelity particle simulator or in the real world — picks the parameters that maximize the task metric, e.g. grams of sand scooped.</p>
     </div>
     <figure class="fig-card method-fig">
       <img src="assets/figures/method.png" alt="Domain-aware policy diagram: proprioception, point-cloud, and domain parameters feed a policy that tracks procedural trajectories T(c;t)">
@@ -250,7 +251,7 @@
 <section id="results" class="alt border-top">
   <div class="wrap">
     <h2><span class="kicker">Experiments — Sim-to-Sim Transfer</span></h2>
-    <p>DAPPT's policies are transferred sim-to-sim into <a href="https://genesis-embodied-ai.github.io/" target="_blank" rel="noopener">Genesis</a>, which simulates the non-rigid sand and play-dough with an MPM solver coupled to the rigid-body dynamics. <i>Genesis Avg</i> is the mean across all sampled settings, and <i>Genesis Best</i> is the single setting that maximizes the task metric.</p>
+    <p>Policies are trained with rigid-body simulation only (IsaacLab), then transferred sim-to-sim into <a href="https://genesis-embodied-ai.github.io/" target="_blank" rel="noopener">Genesis</a>, which simulates the sand and play-dough with an MPM solver coupled to the rigid-body dynamics. We randomly sample domain parameters and evaluate each over multiple episodes: <i>Genesis Avg</i> is the mean across all sampled parameters, and <i>Genesis Best</i> is the domain parameter that produces the highest task metric.</p>
 
     <div class="task-pill-grid" style="margin-top:20px; margin-bottom:32px;">
       <div>
@@ -279,13 +280,27 @@
       </div>
     </div>
 
+    <h3>Comparison with SimToolReal</h3>
+    <p>We compare against SimToolReal (Kedia et al., 2026), a recent zero-shot sim-to-real tool-use policy trained for universal 6D goal-reaching. Since it needs a reference 6D pose trajectory, we let GPT-6 generate and iterate on one for the same number of trials and report its best result. Note SimToolReal is an oracle that uses ground-truth object poses, while ours is an end-to-end visuomotor policy.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th></th><th>Scrape &darr;</th><th>Rod-Roll</th><th>Scoop</th><th>Mouse-Wheel</th><th>Dispenser</th><th>Spray</th></tr></thead>
+        <tbody>
+          <tr><td><b>Genesis Best (ours)</b></td><td><b>17%</b></td><td><b>2.85 cm</b></td><td><b>13.9 g</b></td><td><b>0.37 rad</b></td><td><b>#2.26k</b></td><td><b>#9.12k</b></td></tr>
+          <tr><td>SimToolReal</td><td>95%</td><td>0 cm</td><td>9.2 g</td><td>0.19 rad</td><td>#0</td><td>#0</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="cap">Scrape reports the share of sand left unscraped (lower is better); Dispenser and Spray report the number of emitted water particles. SimToolReal fails on tasks requiring contact-rich scraping, non-prehensile rolling, and articulated parts.</div>
+
+    <h3 style="margin-top:40px;">Choosing the best domain parameter</h3>
     <div class="fig-card">
       <img src="assets/figures/tracking_metric_bar.png" alt="Bar chart: percentage difference of Genesis Best over Genesis Avg, for tracking error and task metric, across all six tasks">
     </div>
-    <div class="cap">Percentage difference of <i>Genesis Best</i> over <i>Genesis Avg</i>, for both the average per-step tracking error (pose / joint value) and the task metric. </div>
+    <div class="cap">Percentage difference of <i>Genesis Best</i> over <i>Genesis Avg</i>, for both the average per-step tracking error (pose / joint value) and the task metric. Selecting the domain parameter improves the task metric by 1.5&ndash;3.8&times;. Interestingly, the task-metric gain is not strongly correlated with lower tracking error — for Dispenser and Spray it is even negatively correlated.</div>
 
     <h3 style="margin-top:40px;">Why an explicit domain-aware policy is necessary</h3>
-    <p>Replacing the domain-aware policy with a single policy trained only on the fixed <i>Genesis Best</i> trajectory — i.e. no conditioning on <code>c</code>, no test-time search.</p>
+    <p>We replace the domain-aware policy with a fixed-domain policy trained only to track the <i>Genesis Best</i> trajectory. Even with this good reference, task performance drops by roughly half or more: small tracking errors change the outcome, and domain identification jointly accounts for the reference trajectory, the policy's tracking error, and environment forces.</p>
     <div class="table-wrap">
       <table>
         <thead><tr><th></th><th>Mouse-Wheel</th><th>Dispenser</th><th>Scoop</th></tr></thead>
@@ -296,12 +311,14 @@
         </tbody>
       </table>
     </div>
+    <div class="callout"><b>RL ablations.</b> Training without the 10&ndash;20 teleoperated demos (no BC objective) or without the contact trajectory (no contact reward or contact indicators) barely makes progress on many tasks under the same compute budget. Contact references help avoid invalid local-minimum contact states; demos reduce the exploration burden in the 19-dof control space.</div>
   </div>
 </section>
 
 <section id="videos" class="border-top">
   <div class="wrap">
-    <h2><span class="kicker">Experiment - Real-world</span></h2>
+    <h2><span class="kicker">Experiment - Real-world</span>Zero-shot sim-to-real transfer</h2>
+    <p>We deploy the domain-aware policy zero-shot on a 12-dof XHand1 hand mounted on a 7-dof Franka Research 3 arm, with a single RealSense D435 point cloud, using the <i>Genesis Best</i> domain parameter, 20 trials per task. <b>Motion success</b>: stable grasp and correct object trajectory. <b>Task success</b>: the task metric reaches a threshold; the task metric is averaged over task-success trials.</p>
 
     <!-- SCOOPING -->
     <div class="task-row">
@@ -322,7 +339,7 @@
     <!-- ROD-ROLLING -->
     <div class="task-row">
       <div class="task-row-head"><h3><span class="task-idx">02</span>Rod-Rolling</h3></div>
-      <p class="metric-def">Roll the rod over play-dough, maximizing coverage. <b>Task metric:</b> maximal forward (x-axis) distance the rod rolls over the dough.</p>
+      <p class="metric-def">Roll the rod over the play-dough. <b>Task metric:</b> distance the play-dough is rolled over.</p>
       <div class="real-stats"><span><b>16/20</b> motion success</span><span><b>11/20</b> task success</span><span><b>2.7 cm</b> avg. task metric (real)</span></div>
       <div class="video-columns">
         <div>
@@ -338,8 +355,8 @@
     <!-- SCRAPING -->
     <div class="task-row">
       <div class="task-row-head"><h3><span class="task-idx">03</span>Scraping</h3></div>
-      <p class="metric-def">Scrape sand forward into the front of the table without it slipping off the sides. <b>Task metric:</b> share of sand successfully scraped forward.</p>
-      <div class="real-stats"><span><b>19/20</b> motion success</span><span><b>19/20</b> task success</span><span><b>71%</b> avg. task metric (real)</span></div>
+      <p class="metric-def">Scrape a pile of sand off the table with the scraper. <b>Task metric:</b> proportion of sand left unscraped (lower is better).</p>
+      <div class="real-stats"><span><b>19/20</b> motion success</span><span><b>19/20</b> task success</span><span><b>29%</b> sand remaining (real)</span></div>
       <div class="video-columns">
         <div>
           <div class="col-label orange-text"><span class="dot orange"></span>Real Rollouts</div>
@@ -354,7 +371,7 @@
     <!-- MOUSE-WHEEL -->
     <div class="task-row">
       <div class="task-row-head"><h3><span class="task-idx">04</span>Mouse-Wheel</h3></div>
-      <p class="metric-def">Scroll a mouse's wheel as far as possible with a single swing of a finger — challenging due to the wheel's small size and noisy depth readings. <b>Task metric:</b>  recorded scroll-roll distance (real).</p>
+      <p class="metric-def">Scroll a mouse's wheel as far as possible with a single swing of a finger — challenging due to the wheel's small size and noisy depth readings. <b>Task metric:</b> angle the wheel scrolls.</p>
       <div class="real-stats"><span><b>19/20</b> motion success</span><span><b>19/20</b> task success</span><span><b>0.33 rad</b> avg. task metric (real)</span></div>
       <div class="video-columns">
         <div>
@@ -370,7 +387,7 @@
     <!-- DISPENSER -->
     <div class="task-row">
       <div class="task-row-head"><h3><span class="task-idx">05</span>Dispenser</h3></div>
-      <p class="metric-def">Press the dispenser head down. <b>Task metric:</b> simulated amount of liquid emitted.</p>
+      <p class="metric-def">Press the dispenser head down. <b>Task metric (sim):</b> amount of water emitted.</p>
       <div class="real-stats"><span><b>18/20</b> motion success</span><span><b>14/20</b> task success</span></div>
       <div class="video-columns">
         <div>
@@ -379,7 +396,7 @@
             <div><div class="vid-frame"><span class="vid-badge">#1</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/dispenser/real_top1.webm" type="video/webm"></video></div></div>
             <div><div class="vid-frame"><span class="vid-badge">#2</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/dispenser/real_top2.webm" type="video/webm"></video></div></div>
           </div>
-          <div class="na-note">No liquid was dispensed during real trials.</div>
+          <div class="na-note">Water emission is not used in real trials for safety.</div>
         </div>
       </div>
     </div>
@@ -387,7 +404,7 @@
     <!-- SPRAY -->
     <div class="task-row">
       <div class="task-row-head"><h3><span class="task-idx">06</span>Spray</h3></div>
-      <p class="metric-def">Grasp and lift the spray bottle, then press the trigger. <b>Task metric:</b> simulated amount of liquid sprayed.</p>
+      <p class="metric-def">Grasp and lift the spray bottle, then press the trigger. <b>Task metric (sim):</b> amount of water emitted from the spray head.</p>
       <div class="real-stats"><span><b>16/20</b> motion success</span><span><b>10/20</b> task success</span></div>
       <div class="video-columns">
         <div>
@@ -396,7 +413,7 @@
             <div><div class="vid-frame"><span class="vid-badge">#1</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/spray/real_top1.webm" type="video/webm"></video></div></div>
             <div><div class="vid-frame"><span class="vid-badge">#2</span><video muted playsinline preload="metadata"><source data-src="assets/videos_clips/spray/real_top2.webm" type="video/webm"></video></div></div>
           </div>
-          <div class="na-note">No liquid was sprayed during real trials.</div>
+          <div class="na-note">Water emission is not used in real trials for safety.</div>
         </div>
       </div>
     </div>
@@ -416,7 +433,7 @@
       <div>
         <p>Because domain parameters have direct physical meaning, their effect on behavior is interpretable in the real world too:</p>
         <ul style="color:var(--ink-soft); padding-left:1.2em; margin:0 0 1em;">
-          <li style="margin-bottom:10px;"><b style="color:var(--ink)">Scooping</b> — averaging all 4 domain parameters over their sampling range yields 2.9 g of scooped sand across 10 trials; the <i>Genesis Best</i> parameter setting reaches 7.7 g.</li>
+          <li style="margin-bottom:10px;"><b style="color:var(--ink)">Scooping</b> — using the mean of the sampling range for all 4 domain parameters yields 2.9 g of scooped sand across 10 trials; the <i>Genesis Best</i> parameter setting reaches 7.7 g.</li>
           <li style="margin-bottom:10px;"><b style="color:var(--ink)">Rod-Rolling</b> — a smaller target rolling velocity produces firmer contact and deeper play-dough deformation; a faster velocity shortens the contact window and rolls shallower.</li>
           <li style="margin-bottom:10px;"><b style="color:var(--ink)">Scraping</b> — the <i>Genesis Best</i> parameter targets a scraper height slightly above the table (leaving more sand behind), while a lower target height closes the gap and leaves a visibly cleaner table.</li>
         </ul>
@@ -430,7 +447,7 @@
     <h3 style="color:var(--ink); font-size:1rem;">Citation</h3>
     <pre>@article{han2026dappt,
   title   = {DAPPT: Domain-Aware Policies from Procedural Trajectories
-             for Sim-to-Real Dexterous Manipulation},
+             for Sim-to-Real Dexterous Tool Use},
   author  = {Han, Beining and Deng, Jia},
   journal = {Princeton University},
   year    = {2026}
